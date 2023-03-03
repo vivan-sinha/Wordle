@@ -75,27 +75,10 @@ else:
     pattern_table = pickle.load(file)
     file.close()
 
-"""## Guess Strategy
-
-We use the term "alphabet of a random variable" to mean the set of potential values it could take on with positive probability (not to be confused with the English alphabet). For example, the alphabet of $X$ is the set of 2315 possible secret words.
-
-Fix a time index $t$. Let $X_t = X|Y_1, \ldots, Y_{t-1}$ where $Y_i$ is the pattern we observe after our $i$th guess, which we assume has already happened. Then, we can see that $X_t$ also has a uniform distribution over its alphabet because the color pattens we observe only tell us which secret words are possible and which are not, but do not change the relative probabilities assigned to the possible secret words. In other words, we can think of each guess as "narrowing down" the alphabet of $X$.
-
-Let $Y_{t,k}$ be the resulting pattern for guessing the word $k$ at timestep $t$. Both $X_t$ and $Y_{t,k}$ are random variables. Note that the index $k$ here is a word we guess. We want to minimize the conditional entropy $H(X_t|Y_{t,k})$ over $k \in$ `allowed_guesses` since it's the "leftover uncertainty" about $X_t$ after observing the color pattern for $k$. Namely, if $Y_t=Y_{t,k}$ (meaning that we guess word $k$), then $H(X_t|Y_{t,k})=\log_2 |\text{alphabet of $X_{t+1}$}|$ since $X_{t+1}$ is still uniform over its alphabet.
-
-Recall that $$H(X_t)=I(X_t;Y_{t,k})+H(X_t|Y_{t,k}).$$
-
-Since $H(X_t)$ is a constant given a particular observation of $Y_1, \ldots, Y_{t-1} = (y_1, \ldots, y_{t-1})$, minimizing $H(X_t|Y_{t,k})$ is equivalent to maximizing $I(X_t;Y_{t,k})$.
-
-But what is $I(X_t;Y_{t,k})$? The mutual information is the amount of information in $X_t$ gained through observing $Y_{t,k}$, which equals the amount of information in $Y_{t,k}$ gained through observing $X_t$. However, if we know $X_t$ (which means we peek at the answer), then $Y_{t,k}|X_t$ is deterministic! Knowing $X_t$ would reduce the uncertainty in $Y_{t,k}$ from $H(Y_{t,k})$ to $0$, which means that
-
-$$I(X_t;Y_{t,k})=H(Y_{t,k})-H(Y_{t,k}|X_t)=H(Y_{t,k})-0=H(Y_{t,k}).$$
-
-The conclusion is that we reformulate the problem of minimizing $H(X_t|Y_{t,k})$ into maximizing $I(X_t;Y_{t,k})$ then into maximizing $H(Y_{t,k})$. Please make sure you fully understand our steps above!
-
-**Let's start by implementating `divide_alphabet`**, which takes in a guess and the current alphabet. The function would split the alphabet into smaller subgroups. Namely, it returns a dictionary that maps from the set of possible color patterns to the set of secret words such that `pattern_table[guess][secret_word]` is that color pattern. For example, if `guess` is "shake" and `alphabet` is {shape, shake, shame}, then the function should return the mapping (2,2,2,2,2)$\to${shake}, (2,2,2,0,2)$\to${shape, shame}.
 """
-
+Takes in a guess and the current alphabet. 
+Returns a dictionary that maps each color pattern to a list of possible words
+"""
 def divide_alphabet(guess, alphabet):
     pattern_to_subgroup = {}
     
@@ -109,13 +92,11 @@ def divide_alphabet(guess, alphabet):
     
     return pattern_to_subgroup
 
-"""Then, since $X$ is uniform over its alphabet, the probability that we observe each pattern is proportional to the number of words in that subgroup. **In the following cell, implement `prob_dist`**, which takes in the output of the above function and returns the probability distribution over the set of possible patterns. For the same example above, this function would take in the mapping (2,2,2,2,2)$\to${shake}, (2,2,2,0,2)$\to${shape, shame} and return $\left[\frac{1}{3}, \frac{2}{3}\right]$ This is the distribution of $Y_{t,k}$."""
-
 def prob_dist(pattern_groups):
     # returns a probability distribution in the form of a list
     # for example, if the probability distribution is
     # P(pattern_1) = 0.2, P(pattern_2) = 0.3, P(pattern_3) = 0.5,
-    # this function should return [0.2, 0.3, 0.5]. Order doesn't matter
+    # this function should return [0.2, 0.3, 0.5].
     dist = []
     
     total = 0
@@ -126,16 +107,16 @@ def prob_dist(pattern_groups):
     dist = [x/total for x in dist]
     return dist
 
-"""**In the cell below, implement the function `entropy`**, which takes in a probability distribution (in a list format, like the output of the previous function) and outputs its entropy. You may assume that the distribution has no entry of $0$ and is a valid distribution. From this we can find $H(Y_k)$, which is the quantity we seek to maximize."""
-
 def entropy(dist):
     ent = 0
     for p in dist:
       ent += p * math.log2(1/p)
     return ent
 
-"""Now we're into business! We've specified how to quantitatively compare quality of guesses, and **let's now implement `find_best_guess`**, which takes in the alphabet of $X_t$ and returns the best guess to make. Recall that the best guess is a guess $k\in$ `allowed_guesses` that maximizes $H(Y_{t,k})$."""
-
+"""
+Takes in the current alphabet and all legal guesses
+Returns the guess which provides the most information
+"""
 def find_best_guess(alphabet, allowed_guesses):
     word, highest = None, 0
     
@@ -148,9 +129,8 @@ def find_best_guess(alphabet, allowed_guesses):
           
     return word
 
-"""## Best Wordle Opener
-
-Here is the question that Wordle lovers are looking for: What is the best opening guess under our scheme? (**Important Note:** this is the best opener given our assumptions that the secret word is picked *uniformly at random* over the 2315 possible secret words, and we are using a greedy algorithm to get the most information out of each guess. This is not guaranteed to be the truly optimal guess.)
+"""
+Best Wordle Opener (greedy)
 """
 
 # best_opener = find_best_guess(possible_words, allowed_guesses)
@@ -192,11 +172,6 @@ def play_wordle(wordle_game, print_guesses=False):
 
     return num_guesses
 
-"""## Wordle Bot! (Optional)
-
-For the final part of the lab, let's use what we've built so far and transform it into a Wordle bot! **Implement the following class `WordleBot`** that interactively outputs its suggested guess, and receives inputs that consist of your actual guess and the pattern displayed. Feel free to modify the code below to tailor the bot to your liking, such as outputting more than one suggested word, outputting the word along with its mutual information with the secret word, or giving it a better user interface in your personal project!
-"""
-
 class WordleBot:
     def __init__(self, hard=False):
         # initialize for a new game
@@ -214,7 +189,7 @@ class WordleBot:
         # after a guess, feed the pattern to the bot to update
         # then, the bot suggests a word to guess
         if pattern == (2,2,2,2,2):
-            print("We got it in", bot.counter, 'tries!')
+            print("We got it in", self.counter, 'tries!')
             return True
             
         assert len(self.next) == len(pattern) == 5
@@ -236,18 +211,19 @@ class WordleBot:
                 user_input = input("What was the pattern? ")
                 input_as_list = user_input.split(',')
                 
-                # If they wan
-                if len(input_as_list) == 6:
+                # If they want to input their own guess
+                if len(input_as_list) == 6 or len(input_as_list) == 2:
                     if len(input_as_list[0]) == 5:
                         self.next = input_as_list[0]
                         input_as_list = input_as_list[1:]
-                        
+                
                 previous_pattern = tuple(int(x) for x in input_as_list)
+                
                 
                 valid = len(previous_pattern) == 5
                 if not valid:
-                    if len(user_input) == 5:
-                        previous_pattern = tuple(int(user_input[i]) for i in range(5))
+                    if len(input_as_list[0]) == 5:
+                        previous_pattern = tuple(int(input_as_list[0][i]) for i in range(5))
                     
                     valid = True
                     
@@ -262,23 +238,4 @@ class WordleBot:
                 print("Please input a list of 5 integers (0-2) seperated by commas.")
         
         return previous_pattern
-
-user_input = input("Are you playing hard mode? (y/n) ")
-
-if user_input == 'y' or user_input == 'yes':
-    bot = WordleBot(hard=True)
-else: bot = WordleBot()
-
-previous_pattern = (0, 0, 0, 0, 0)
-done = False
-
-while not done:
-    previous_pattern = bot.take_input()
-    done = bot.observe(previous_pattern)
     
-    if done:
-        user_input = input("Would you like to play again? (y/n) ")
-        if user_input == 'y' or user_input == 'yes':
-            bot.restart()
-            previous_pattern = (0, 0, 0, 0, 0)
-            done = False
