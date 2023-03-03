@@ -1,5 +1,5 @@
 """Authors v1.0 (Fall 2022): Andy Dong"""
-LOAD_FROM_FILE = True
+LOAD_FROM_FILE = False
 import pickle
 import math
 import os
