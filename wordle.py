@@ -1,5 +1,5 @@
 """Authors v1.0 (Fall 2022): Andy Dong"""
-
+LOAD_FROM_FILE = True
 import pickle
 import math
 import os
@@ -50,16 +50,15 @@ def compute_pattern(guess, answer):
     
     return tuple(pattern)
 
-load_from_file = False
-if load_from_file:
+if LOAD_FROM_FILE:
     print("Please wait a moment while the bot loads the word table.")
 else:
     print("Please wait a few minutes while the bot writes the word table.")
-    print("Next time you run the bot make sure to change load_from_file to True")
+    print("Next time you run the bot make sure to change LOAD_FROM_FILE to True")
 
 pattern_table = {}
 
-if not load_from_file:
+if not LOAD_FROM_FILE:
     for guess in allowed_guesses:
         word_table = {}
         for answer in possible_words:
